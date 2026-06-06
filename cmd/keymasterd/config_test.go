@@ -38,6 +38,18 @@ func TestGenerateNewConfigInternal(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	wd, err := os.Getwd()
+	if err != nil {
+		t.Fatal(err)
+	}
+	err = os.MkdirAll(filepath.Join(dir, "usr/share/keymasterd"), 0755)
+	if err != nil {
+		t.Fatal(err)
+	}
+	err = os.Symlink(filepath.Join(wd, "customization_data"), filepath.Join(dir, "usr/share/keymasterd", "customization_data"))
+	if err != nil {
+		t.Fatal(err)
+	}
 	// AND not try to load
 	_, err = loadVerifyConfigFile(configFilename, testlogger.New(t))
 	if err != nil {

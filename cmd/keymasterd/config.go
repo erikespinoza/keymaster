@@ -1154,24 +1154,29 @@ func generateNewConfigInternal(reader *bufio.Reader, configFilename string,
 	rsaKeySize int, passphrase []byte) error {
 	var config AppConfigFile
 	//Get base dir
-	baseDir, err := getUserString(reader, "Default base Dir", "/tmp")
+	baseDir, err := getUserString(reader, "Default base Dir", "/")
 	if err != nil {
 		return err
 	}
 	baseDir = strings.Trim(baseDir, "\r\n")
 	//make dest tartget
-	configDir := filepath.Join(baseDir, "/etc/keymaster")
+	configDir := filepath.Join(baseDir, "etc/keymaster")
 	logger.Printf("configdir = '%s'", configDir)
 	err = os.MkdirAll(configDir, os.ModeDir|0755)
 	if err != nil {
 		return err
 	}
 	config.Base.DataDirectory, err = getUserString(reader, "Data Directory",
-		baseDir+"/var/lib/keymaster")
+		filepath.Join(baseDir, "var/lib/keymaster"))
 	if err != nil {
 		return err
 	}
 	err = os.MkdirAll(config.Base.DataDirectory, os.ModeDir|0755)
+	if err != nil {
+		return err
+	}
+	config.Base.SharedDataDirectory, err = getUserString(reader, "Shared Data Directory",
+		filepath.Join(baseDir, "usr/share/keymasterd"))
 	if err != nil {
 		return err
 	}
