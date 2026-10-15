@@ -1,3 +1,6 @@
+//go:build !android && cgo && !nou2f && !nowebauthn
+// +build !android,cgo,!nou2f,!nowebauthn
+
 // Package twofa contains routines for getting short lived certificate.
 package u2f
 

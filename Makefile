@@ -26,8 +26,11 @@ CLIENT_LDFLAGS=${DEFAULT_LDFLAGS} -X main.defaultHost=${DEFAULT_HOST}
 EXTRA_BUILD_FLAGS?=
 ifneq ($(OS),Windows_NT)
 	UNAME_S := $(shell uname -s)
+	UNAME_O := $(shell uname -o 2>/dev/null)
 	ifeq ($(UNAME_S),Linux)
-		EXTRA_BUILD_FLAGS+= -tags=hidraw
+		ifneq ($(UNAME_O),Android)
+			EXTRA_BUILD_FLAGS+= -tags=hidraw
+		endif
 	endif
 	CLIENT_DEST?="./cmd/keymaster/"
 	OUTPUT_DIR?=bin/
@@ -63,6 +66,10 @@ install-client:	prebuild
 
 build-client:	prebuild
 	go build -ldflags "${CLIENT_LDFLAGS}" -o $(OUTPUT_DIR) $(CLIENT_DEST)
+
+android:	prebuild
+	mkdir -p $(OUTPUT_DIR)
+	CGO_ENABLED=0 GOOS=android go build -ldflags "${CLIENT_LDFLAGS}" -o $(OUTPUT_DIR)$(BINARY) $(CLIENT_DEST)
 
 win-client: client-test
 	 go build -ldflags "${CLIENT_LDFLAGS}" -o $(OUTPUT_DIR) .\cmd\keymaster\

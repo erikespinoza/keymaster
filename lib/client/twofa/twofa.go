@@ -21,10 +21,7 @@ import (
 	"github.com/Cloud-Foundations/golib/pkg/log"
 	"github.com/Cloud-Foundations/keymaster/lib/client/twofa/pushtoken"
 	"github.com/Cloud-Foundations/keymaster/lib/client/twofa/totp"
-	"github.com/Cloud-Foundations/keymaster/lib/client/twofa/u2f"
 	"github.com/Cloud-Foundations/keymaster/lib/webapi/v0/proto"
-	"github.com/flynn/u2f/u2fhid" // client side (interface with hardware)
-	"github.com/marshallbrekka/go-u2fhost"
 	"golang.org/x/crypto/ssh"
 )
 
@@ -125,59 +122,6 @@ func doCertRequestInternal(client *http.Client,
 	return ioutil.ReadAll(resp.Body)
 }
 
-// tryFidoMFA performs a fido authentication step
-// If there are no devices connected it will return false, nil
-// if there are fido devices connected it will return
-// true, nil on successul MFA and false, error on failure to
-// perform the Fido authentication
-func tryFidoMFA(
-	baseURL string,
-	client *http.Client,
-	userAgentString string,
-	logger log.DebugLogger,
-) (bool, error) {
-	// Linux support for the new library is not quite correct
-	// so for now we keep using the old library (pure u2f)
-	// for linux cli as default. Windows 10 and MacOS have been
-	// tested successfully.
-	// The env variable allows us to swap what library is used by
-	// default
-	useWebAuthh := true
-	if os.Getenv("KEYMASTER_USEALTU2FLIB") != "" {
-		useWebAuthh = !useWebAuthh
-	}
-	var err error
-	if !useWebAuthh {
-		devices, err := u2fhid.Devices()
-		if err != nil {
-			logger.Printf("could not open hid devices err=%s", err)
-			return false, err
-		}
-		if len(devices) < 1 {
-			logger.Debugf(2, "No Fido devices found")
-			return false, nil
-		}
-		err = u2f.DoU2FAuthenticate(
-			client, baseURL, userAgentString, logger)
-		if err != nil {
-
-			return false, err
-		}
-		return true, nil
-	}
-	devices := u2fhost.Devices()
-	if devices == nil || len(devices) < 1 {
-		logger.Debugf(2, "No Fido devices found")
-		return false, nil
-	}
-	err = u2f.WithDevicesDoWebAuthnAuthenticate(devices,
-		client, baseURL, userAgentString, logger)
-	if err != nil {
-		logger.Debugf(1, "Error doing hid webathentication err=%s", err)
-		return false, err
-	}
-	return true, nil
-}
 
 // This assumes the http client has a non-nul cookie jar
 func authenticateUser(
@@ -288,7 +232,10 @@ func authenticateUser(
 		if _, err := os.Stat("/sys/class/hidraw"); os.IsNotExist(err) {
 			allowU2F = false
 		}
-
+	}
+	// on android disable U2F as hardware tokens are not supported
+	if runtime.GOOS == "android" && allowU2F {
+		allowU2F = false
 	}
 	// upgrade to u2f
 	successful2fa := false

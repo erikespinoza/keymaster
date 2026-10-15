@@ -46,6 +46,13 @@ For Windows (both gcc and gnu-make) use: [TDM-GCC (64 bit)](https://sourceforge.
 
 The make process will build the four binaries (keymasterd, keymaster, keymaster-unlocker, and keymaster-eventmond) described above.
 
+#### Building for Android / Termux (Client Only)
+To build only the `keymaster` client binary for Android / Termux without CGO or hardware token library dependencies (`pkg-config`, `libudev-dev`):
+```bash
+make android
+```
+This builds `bin/keymaster` for Android (`GOOS=android`, `CGO_ENABLED=0`) targeting the host architecture (e.g., `amd64`, `arm64`) or whatever architecture is specified via `GOARCH=<arch> make android`. On Android/Termux, hardware U2F/WebAuthn is disabled, and authentication falls back to alternative configured second factors (TOTP, VIP, Okta).
+
 ### Running
 Once you've installed (or compiled) the binaries follow the following instructions to setup a Keymaster environment
 
